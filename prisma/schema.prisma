@@ -1,0 +1,71 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String          @id @default(uuid())
+  name             String
+  age              Int
+  email            String          @unique
+  role             Role            @default(BASIC)
+  // one to many
+  writtenPosts     Post[]          @relation("WrittenPosts")
+  favoritePosts    Post[]          @relation("FavoritePosts")
+  userPreference   UserPreference? @relation(fields: [userPreferenceId], references: [id])
+  userPreferenceId String?         @unique
+
+  // block level attribute
+  @@unique([age, name])
+  // for searching performance
+  @@index([email])
+}
+
+model UserPreference {
+  id           String  @id @default(uuid())
+  emailUpdates Boolean
+  // one to one
+  // userId must unique bcs it's reference to User id
+  user         User?
+}
+
+model Post {
+  id            String     @id @default(uuid())
+  age           Int
+  title         String
+  averageRating String
+  rating        Float
+  createdAt     DateTime   @default(now())
+  // automating update at current time
+  updatedAt     DateTime   @updatedAt
+  authorId      String
+  author        User       @relation("WrittenPosts", fields: [authorId], references: [id])
+  FavoriteById  String
+  FavoriteBy    User       @relation("FavoritePosts", fields: [FavoriteById], references: [id])
+  // many to category
+  categoris     Category[]
+
+  // composite id to contains two, but we dont need it 
+  // @@id([title, authorId])
+}
+
+model Category {
+  id    String @id @default(uuid())
+  // many to post
+  posts Post[]
+  name  String @unique
+}
+
+// enum
+enum Role {
+  BASIC
+  EDITOR
+  ADMIN
+}
